@@ -12,6 +12,14 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _formKey = GlobalKey<FormState>();
   final _controller = TextEditingController();
+  String selectedFormat = 'dd-mm-yyyy';
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with default date format
+    setCurrentDateFormat(selectedFormat);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 TextFormField(
                   controller: _controller,
                   keyboardType: TextInputType.number,
-                  inputFormatters: [TextInputValidtion()],
+                  inputFormatters: [TextInputValidation(selectedFormat)],
                   decoration: InputDecoration(
                     labelText: 'Enter Date(DD-MM-YYYY)',
                     hintText:'Enter Date',
@@ -62,6 +70,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     backgroundColor: Colors.orangeAccent,
                     side: BorderSide(color: Colors.black),
                   ),
+                ),
+                DropdownButton<String>(
+                  value: selectedFormat,
+                  items: getEnabledDateFormats().map((format) {
+                    return DropdownMenuItem<String>(
+                      value: format,
+                      child: Text(format),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedFormat = value ?? 'dd-mm-yyyy';
+                      setCurrentDateFormat(selectedFormat);
+                    });
+                  },
                 ),
               ],
             ),

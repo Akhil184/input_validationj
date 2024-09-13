@@ -35,92 +35,142 @@ const String jsonConfig = '''
 /// Parse the JSON configuration
 List<Map<String, dynamic>> parseDateConfig() {
   return List<Map<String, dynamic>>.from(jsonDecode(jsonConfig));
+
 }
 
+List getEnabledDateFormats() {
+  return parseDateConfig()
+      .where((config) => config['enabled'] == true)
+      .map((config) => config['datetype'])
+      .toList();
+}
+
+String? _currentDateFormat = 'dd-mm-yyyy';
+
 /// Formatter for the date input field that automatically inserts and removes separators
-class TextInputValidtion extends TextInputFormatter {
+class TextInputValidation extends TextInputFormatter {
+  final String dateFormat;
+
+  TextInputValidation(this.dateFormat);
+
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    // Handle deletion (backspace)
-    if (oldValue.text.length > newValue.text.length) {
-      return newValue;
-    }
-
-    final dateFormatConfig = parseDateConfig().firstWhere(
-            (config) => config['enabled'] == true,
-        orElse: () => {'datetype': 'dd-mm-yyyy'}); // Default to dd-mm-yyyy
-
-    final dateFormat = dateFormatConfig['datetype'];
     final separator = dateFormat.contains('/') ? '/' : '-';
+    final newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final oldText = oldValue.text.replaceAll(RegExp(r'[^0-9]'), '');
 
-    // Remove all non-numeric characters except for the separator
-    String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    StringBuffer buffer = StringBuffer();
+    int cursorOffset = newValue.selection.baseOffset;
 
-    final buffer = StringBuffer();
-
-    // Insert separators based on the date format
-    if (dateFormat == 'dd-mm-yyyy' || dateFormat == 'dd/mm/yyyy') {
-      if (text.length > 2) {
-        buffer.write(text.substring(0, 2) + separator);
-        if (text.length > 4) {
-          buffer.write(text.substring(2, 4) + separator);
-          if (text.length > 6) {
-            buffer.write(text.substring(4, 8));
-          } else {
-            buffer.write(text.substring(4));
-          }
+    // Build formatted text based on length
+    if (newText.length > 2) {
+      buffer.write(newText.substring(0, 2) + separator);
+      if (newText.length > 4) {
+        buffer.write(newText.substring(2, 4) + separator);
+        if (newText.length > 6) {
+          buffer.write(newText.substring(4, 8));
         } else {
-          buffer.write(text.substring(2));
+          buffer.write(newText.substring(4));
         }
       } else {
-        buffer.write(text);
+        buffer.write(newText.substring(2));
       }
-    } else if (dateFormat == 'mm-dd-yyyy' || dateFormat == 'mm/dd/yyyy') {
-      if (text.length > 2) {
-        buffer.write(text.substring(0, 2) + separator);
-        if (text.length > 4) {
-          buffer.write(text.substring(2, 4) + separator);
-          if (text.length > 6) {
-            buffer.write(text.substring(4, 8));
-          } else {
-            buffer.write(text.substring(4));
-          }
-        } else {
-          buffer.write(text.substring(2));
-        }
-      } else {
-        buffer.write(text);
-      }
-    } else if (dateFormat == 'yyyy-mm-dd' || dateFormat == 'yyyy/mm/dd') {
-      if (text.length > 4) {
-        buffer.write(text.substring(0, 4) + separator);
-        if (text.length > 6) {
-          buffer.write(text.substring(4, 6) + separator);
-          if (text.length > 8) {
-            buffer.write(text.substring(6));
-          } else {
-            buffer.write(text.substring(6));
-          }
-        } else {
-          buffer.write(text.substring(4));
-        }
-      } else {
-        buffer.write(text);
-      }
+    } else {
+      buffer.write(newText);
     }
 
-    // Calculate the cursor position after formatting
-    final cursorOffset = buffer.length;
+    final formattedText = buffer.toString();
+
+    // Adjust cursor position
+    int newCursorOffset = _calculateCursorOffset(oldText, newText, cursorOffset, formattedText);
+
+    newCursorOffset = newCursorOffset.clamp(0, formattedText.length);
 
     return TextEditingValue(
-      text: buffer.toString(),
+      text: formattedText,
       selection: TextSelection.collapsed(
-        offset: cursorOffset, // Move cursor to the end
+        offset: newCursorOffset,
       ),
     );
   }
+
+  int _calculateCursorOffset(
+      String oldText,
+      String newText,
+      int cursorOffset,
+      String formattedText,
+      ) {
+    // If the new text is empty, cursor should be at position 0
+    if (newText.isEmpty) return 0;
+
+    final oldTextLength = oldText.length;
+    final newTextLength = newText.length;
+    final formattedTextLength = formattedText.length;
+
+    // Handle cases where characters are added
+    if (formattedTextLength > oldTextLength) {
+      final addedChars = formattedTextLength - oldTextLength;
+      return cursorOffset + addedChars;
+    }
+
+    // Handle cases where characters are removed
+    if (formattedTextLength < oldTextLength) {
+      final removedChars = oldTextLength - formattedTextLength;
+
+      // Move the cursor position left if it was before the separator
+      if (cursorOffset > formattedTextLength) {
+        return formattedTextLength;
+      }
+
+      // Adjust cursor position considering removed characters
+      if (cursorOffset > oldTextLength - removedChars) {
+        return cursorOffset - removedChars;
+      }
+
+      return cursorOffset;
+    }
+
+    // For cases where only formatting changes but the length remains the same
+    return cursorOffset;
+  }
 }
+
+
+
+  int _adjustCursorForInsertion(String oldText, String newText, int cursorOffset, String formattedText) {
+    int oldIndex = oldText.length - cursorOffset;
+    int newIndex = newText.length - cursorOffset;
+    int adjustedOffset = cursorOffset + (formattedText.length - oldText.length);
+    return adjustedOffset;
+  }
+
+  int _adjustCursorForRemoval(String oldText, String newText, int cursorOffset, String formattedText) {
+    int oldIndex = oldText.length - cursorOffset;
+    int newIndex = newText.length - cursorOffset;
+    int adjustedOffset = cursorOffset - (oldText.length - formattedText.length);
+    return adjustedOffset;
+  }
+
+
+
+//   int _adjustCursorForInsertion(String oldText, String newText, int cursorOffset, String formattedText) {
+//     // When characters are inserted, adjust cursor position
+//     int oldIndex = oldText.length - cursorOffset;
+//     int newIndex = newText.length - cursorOffset;
+//     int adjustedOffset = cursorOffset + (formattedText.length - oldText.length);
+//     return adjustedOffset;
+//   }
+//
+//   int _adjustCursorForRemoval(String oldText, String newText, int cursorOffset, String formattedText) {
+//     // When characters are removed, adjust cursor position
+//     int oldIndex = oldText.length - cursorOffset;
+//     int newIndex = newText.length - cursorOffset;
+//     int adjustedOffset = cursorOffset - (oldText.length - formattedText.length);
+//     return adjustedOffset;
+//   }
+// }
+
 
 
 
@@ -142,25 +192,35 @@ String? dateValidator(String? value) {
   switch (dateFormat) {
     case 'dd-mm-yyyy':
     case 'mm-dd-yyyy':
-      regex = RegExp(r'^\d{2}-\d{2}-\d{4}$');
+      regex = RegExp(r'^\d{2}[-]\d{2}[-]\d{4}$'); // Dash only
       break;
     case 'yyyy-mm-dd':
-      regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+      regex = RegExp(r'^\d{4}[-]\d{2}[-]\d{2}$'); // Dash only
       break;
     case 'dd/mm/yyyy':
     case 'mm/dd/yyyy':
-      regex = RegExp(r'^\d{2}/\d{2}/\d{4}$');
+      regex = RegExp(r'^\d{2}[/]\d{2}[/]\d{4}$'); // Slash only
       break;
     case 'yyyy/mm/dd':
-      regex = RegExp(r'^\d{4}/\d{2}/\d{2}$');
+      regex = RegExp(r'^\d{4}[/]\d{2}[/]\d{2}$'); // Slash only
+      break;
+    case 'dd-mm-yyyy-or-dd/mm/yyyy': // New format allowing both separators
+    case 'mm-dd-yyyy-or-mm/dd/yyyy': // New format allowing both separators
+      regex = RegExp(r'^\d{2}[-/]\d{2}[-/]\d{4}$'); // Dash or slash
+      break;
+    case 'yyyy-mm-dd-or-yyyy/mm/dd': // New format allowing both separators
+      regex = RegExp(r'^\d{4}[-/]\d{2}[-/]\d{2}$'); // Dash or slash
       break;
     default:
       return 'Invalid date format';
   }
 
-  if (!regex.hasMatch(value)) {
-    return 'Enter a valid date in $dateFormat format';
-  }
+// Validate the date against the regex
+//   if (!regex.hasMatch(value)) {
+//     return 'Enter a valid date in $dateFormat format';
+//   }
+
+
 
   int day, month, year;
   final parts = value.split(separator);
@@ -236,5 +296,7 @@ bool isLeapYear(int year) {
   return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
 }
 
-
+void setCurrentDateFormat(String format) {
+  _currentDateFormat = format;
+}
 
