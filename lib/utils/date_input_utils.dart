@@ -54,10 +54,8 @@ class TextInputValidation extends TextInputFormatter {
   TextInputValidation(this.dateFormat);
 
   @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue,
-      TextEditingValue newValue,
-      ) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue,
+      TextEditingValue newValue,) {
     final separator = dateFormat.contains('/') ? '/' : '-';
     final newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     final oldText = oldValue.text.replaceAll(RegExp(r'[^0-9]'), '');
@@ -102,43 +100,42 @@ class TextInputValidation extends TextInputFormatter {
     );
   }
 
-  int _calculateCursorOffset(
-      String oldText,
+  int _calculateCursorOffset(String oldText,
       String newText,
       int cursorOffset,
-      String formattedText,
-      ) {
+      String formattedText,) {
     final oldTextLength = oldText.length;
     final formattedTextLength = formattedText.length;
 
-    // Handle text removal
+    // If text is removed
     if (formattedTextLength < oldTextLength) {
-      if (cursorOffset >= oldTextLength) {
-        // Cursor is at or beyond the removed text
+      if (cursorOffset <= formattedTextLength) {
+        // Cursor is within the new text length
+        return cursorOffset;
+      } else {
+        // Cursor was beyond the removed section
         return formattedTextLength;
       }
-
-      int removalOffset = oldTextLength - formattedTextLength;
-      return cursorOffset - removalOffset;
     }
 
-    // Handle text addition
+    // If text is added
     if (formattedTextLength > oldTextLength) {
-      if (cursorOffset <= oldTextLength) {
+      if (cursorOffset < oldTextLength) {
         // Cursor is before the added text
         return cursorOffset;
+      } else {
+        // Cursor was within or after the added section
+        int adjustment = formattedTextLength - oldTextLength;
+        return cursorOffset + adjustment;
       }
-
-      int additionOffset = formattedTextLength - oldTextLength;
-      return cursorOffset + additionOffset;
     }
 
-    // When text length remains the same
+    // If text length remains the same
     return cursorOffset;
   }
 }
 
-/// Validator function for date input with leap year and format validation
+  /// Validator function for date input with leap year and format validation
 String? dateValidator(String? value) {
   if (value == null || value.isEmpty) {
     return 'Please enter a date';
