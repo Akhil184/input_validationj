@@ -138,7 +138,6 @@ class TextInputValidation extends TextInputFormatter {
   }
 }
 
-  /// Validator function for date input with leap year and format validation
 /// Validator function for date input with leap year and format validation
 String? dateValidator(String? value) {
   if (value == null || value.isEmpty) {
