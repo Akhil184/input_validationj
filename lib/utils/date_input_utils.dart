@@ -111,30 +111,35 @@ class TextInputValidation extends TextInputFormatter {
     final oldTextLength = oldText.length;
     final formattedTextLength = formattedText.length;
 
-    // Case when text is removed
+    // Handle text removal
     if (formattedTextLength < oldTextLength) {
-      // Check if cursor was in the part of text that was removed
-      if (cursorOffset > oldTextLength) {
+      if (cursorOffset >= oldTextLength) {
+        // Cursor is at or beyond the removed text
         return formattedTextLength;
       }
-      // Adjust cursor position when characters are removed
-      return cursorOffset - (oldTextLength - formattedTextLength);
+
+      int removalOffset = oldTextLength - formattedTextLength;
+      return cursorOffset - removalOffset;
     }
 
-    // Case when text is added
+    // Handle text addition
     if (formattedTextLength > oldTextLength) {
-      if (cursorOffset < oldTextLength) {
+      if (cursorOffset <= oldTextLength) {
+        // Cursor is before the added text
         return cursorOffset;
       }
-      // Adjust cursor position when characters are added
-      return cursorOffset + (formattedTextLength - oldTextLength);
+
+      int additionOffset = formattedTextLength - oldTextLength;
+      return cursorOffset + additionOffset;
     }
 
     // When text length remains the same
     return cursorOffset;
   }
 }
+
   /// Validator function for date input with leap year and format validation
+/// Validator function for date input with leap year and format validation
 String? dateValidator(String? value) {
   if (value == null || value.isEmpty) {
     return 'Please enter a date';
@@ -151,73 +156,37 @@ String? dateValidator(String? value) {
   RegExp regex;
   switch (dateFormat) {
     case 'dd-mm-yyyy':
-    case 'mm-dd-yyyy':
-      regex = RegExp(r'^\d{2}[-]\d{2}[-]\d{4}$'); // Dash only
-      break;
-    case 'yyyy-mm-dd':
-      regex = RegExp(r'^\d{4}[-]\d{2}[-]\d{2}$'); // Dash only
-      break;
     case 'dd/mm/yyyy':
-    case 'mm/dd/yyyy':
-      regex = RegExp(r'^\d{2}[/]\d{2}[/]\d{4}$'); // Slash only
-      break;
-    case 'yyyy/mm/dd':
-      regex = RegExp(r'^\d{4}[/]\d{2}[/]\d{2}$'); // Slash only
-      break;
-    case 'dd-mm-yyyy-or-dd/mm/yyyy': // New format allowing both separators
-    case 'mm-dd-yyyy-or-mm/dd/yyyy': // New format allowing both separators
       regex = RegExp(r'^\d{2}[-/]\d{2}[-/]\d{4}$'); // Dash or slash
       break;
-    case 'yyyy-mm-dd-or-yyyy/mm/dd': // New format allowing both separators
+    case 'mm-dd-yyyy':
+    case 'mm/dd/yyyy':
+      regex = RegExp(r'^\d{2}[-/]\d{2}[-/]\d{4}$'); // Dash or slash
+      break;
+    case 'yyyy-mm-dd':
+    case 'yyyy/mm/dd':
       regex = RegExp(r'^\d{4}[-/]\d{2}[-/]\d{2}$'); // Dash or slash
       break;
     default:
       return 'Invalid date format';
   }
 
-// Validate the date against the regex
-//   if (!regex.hasMatch(value)) {
-//     return 'Enter a valid date in $dateFormat format';
-//   }
+  if (!regex.hasMatch(value)) {
+    return 'Enter a valid date in $dateFormat format';
+  }
 
-
+  final parts = value.split(RegExp(r'[-/]'));
+  if (parts.length != 3) {
+    return 'Enter a valid date';
+  }
 
   int day, month, year;
-  final parts = value.split(separator);
-
-  switch (dateFormat) {
-    case 'dd-mm-yyyy':
-      day = int.parse(parts[0]);
-      month = int.parse(parts[1]);
-      year = int.parse(parts[2]);
-      break;
-    case 'mm-dd-yyyy':
-      month = int.parse(parts[0]);
-      day = int.parse(parts[1]);
-      year = int.parse(parts[2]);
-      break;
-    case 'yyyy-mm-dd':
-      year = int.parse(parts[0]);
-      month = int.parse(parts[1]);
-      day = int.parse(parts[2]);
-      break;
-    case 'dd/mm/yyyy':
-      day = int.parse(parts[0]);
-      month = int.parse(parts[1]);
-      year = int.parse(parts[2]);
-      break;
-    case 'mm/dd/yyyy':
-      month = int.parse(parts[0]);
-      day = int.parse(parts[1]);
-      year = int.parse(parts[2]);
-      break;
-    case 'yyyy/mm/dd':
-      year = int.parse(parts[0]);
-      month = int.parse(parts[1]);
-      day = int.parse(parts[2]);
-      break;
-    default:
-      return 'Invalid date format';
+  try {
+    day = int.parse(parts[0]);
+    month = int.parse(parts[1]);
+    year = int.parse(parts[2]);
+  } catch (e) {
+    return 'Enter a valid date';
   }
 
   if (year < 1996 || year > 2024) {
@@ -250,6 +219,7 @@ String? dateValidator(String? value) {
 
   return null; // Date is valid
 }
+
 
 /// Helper function to check for leap years
 bool isLeapYear(int year) {
