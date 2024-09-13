@@ -35,7 +35,6 @@ const String jsonConfig = '''
 /// Parse the JSON configuration
 List<Map<String, dynamic>> parseDateConfig() {
   return List<Map<String, dynamic>>.from(jsonDecode(jsonConfig));
-
 }
 
 List getEnabledDateFormats() {
@@ -54,8 +53,10 @@ class TextInputValidation extends TextInputFormatter {
   TextInputValidation(this.dateFormat);
 
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue,
-      TextEditingValue newValue,) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     final separator = dateFormat.contains('/') ? '/' : '-';
     final newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     final oldText = oldValue.text.replaceAll(RegExp(r'[^0-9]'), '');
@@ -100,10 +101,12 @@ class TextInputValidation extends TextInputFormatter {
     );
   }
 
-  int _calculateCursorOffset(String oldText,
-      String newText,
-      int cursorOffset,
-      String formattedText,) {
+  int _calculateCursorOffset(
+    String oldText,
+    String newText,
+    int cursorOffset,
+    String formattedText,
+  ) {
     final oldTextLength = oldText.length;
     final formattedTextLength = formattedText.length;
 
@@ -135,14 +138,14 @@ class TextInputValidation extends TextInputFormatter {
   }
 }
 
-  /// Validator function for date input with leap year and format validation
+/// Validator function for date input with leap year and format validation
 String? dateValidator(String? value) {
   if (value == null || value.isEmpty) {
     return 'Please enter a date';
   }
 
   final dateFormatConfig = parseDateConfig().firstWhere(
-        (config) => config['enabled'] == true,
+    (config) => config['enabled'] == true,
     orElse: () => {'datetype': 'dd-mm-yyyy'},
   );
 
@@ -216,7 +219,6 @@ String? dateValidator(String? value) {
   return null; // Date is valid
 }
 
-
 /// Helper function to check for leap years
 bool isLeapYear(int year) {
   return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
@@ -225,4 +227,3 @@ bool isLeapYear(int year) {
 void setCurrentDateFormat(String format) {
   _currentDateFormat = format;
 }
-
