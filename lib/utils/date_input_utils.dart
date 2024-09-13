@@ -136,44 +136,6 @@ class TextInputValidation extends TextInputFormatter {
   }
 }
 
-
-
-  int _adjustCursorForInsertion(String oldText, String newText, int cursorOffset, String formattedText) {
-    int oldIndex = oldText.length - cursorOffset;
-    int newIndex = newText.length - cursorOffset;
-    int adjustedOffset = cursorOffset + (formattedText.length - oldText.length);
-    return adjustedOffset;
-  }
-
-  int _adjustCursorForRemoval(String oldText, String newText, int cursorOffset, String formattedText) {
-    int oldIndex = oldText.length - cursorOffset;
-    int newIndex = newText.length - cursorOffset;
-    int adjustedOffset = cursorOffset - (oldText.length - formattedText.length);
-    return adjustedOffset;
-  }
-
-
-
-//   int _adjustCursorForInsertion(String oldText, String newText, int cursorOffset, String formattedText) {
-//     // When characters are inserted, adjust cursor position
-//     int oldIndex = oldText.length - cursorOffset;
-//     int newIndex = newText.length - cursorOffset;
-//     int adjustedOffset = cursorOffset + (formattedText.length - oldText.length);
-//     return adjustedOffset;
-//   }
-//
-//   int _adjustCursorForRemoval(String oldText, String newText, int cursorOffset, String formattedText) {
-//     // When characters are removed, adjust cursor position
-//     int oldIndex = oldText.length - cursorOffset;
-//     int newIndex = newText.length - cursorOffset;
-//     int adjustedOffset = cursorOffset - (oldText.length - formattedText.length);
-//     return adjustedOffset;
-//   }
-// }
-
-
-
-
 /// Validator function for date input with leap year and format validation
 String? dateValidator(String? value) {
   if (value == null || value.isEmpty) {
